@@ -36,10 +36,8 @@ def main(args):
 
     decoder = DecoderRNN(len(dictionary), args.hidden_size, len(vocab), args.num_layers).to(device)
 
-    # Loss and optimizer
-    criterion = nn.CrossEntropyLoss()
-    params = list(decoder.parameters())# + list(encoder.linear.parameters()) + list(encoder.bn.parameters())
-    optimizer = torch.optim.Adam(params, lr=args.learning_rate)
+    decoder.load_state_dict(torch.load(args.model_path, map_location=device))
+    decoder.eval()
 
     # Train the models
     total_step = len(data_loader)
@@ -48,35 +46,30 @@ def main(args):
 
             # Set mini-batch dataset
             array = array.to(device)
-            captions = captions.to(device)
+            #captions = captions.to(device)
             targets = pack_padded_sequence(captions, lengths, batch_first=True)[0]
 
             # Forward, backward and optimize
             #features = encoder(images)
-            outputs = decoder(array, captions, lengths)
-            loss = criterion(outputs, targets)
-            decoder.zero_grad()
-            #encoder.zero_grad()
-            loss.backward()
-            optimizer.step()
+            outputs = decoder.sample(array)
 
-            # Print log info
-            if i % args.log_step == 0:
-                print('Epoch [{}/{}], Step [{}/{}], Loss: {:.4f}, Perplexity: {:5.4f}'
-                      .format(epoch, args.num_epochs, i, total_step, loss.item(), np.exp(loss.item())))
+            sampled_ids = outputs[0].cpu().numpy()          # (1, max_seq_length) -> (max_seq_length)
 
-            # Save the model checkpoints
-            if (i+1) % args.save_step == 0:
-                torch.save(decoder.state_dict(), os.path.join(
-                    args.model_path, 'decoder-{}-{}.ckpt'.format(epoch+1, i+1)))
-                #torch.save(encoder.state_dict(), os.path.join(
-                    #args.model_path, 'encoder-{}-{}.ckpt'.format(epoch+1, i+1)))
+            # Convert word_ids to words
+            sampled_caption = []
+            for word_id in sampled_ids:
+                word = vocab.idx2word[word_id]
+                sampled_caption.append(word)
+                if word == '<end>':
+                    break
+            sentence = ' '.join(sampled_caption)
 
+            # Print out the image and the generated caption
+            print (sentence)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--model_path', type=str, default='models/' , help='path for saving trained models')
-    parser.add_argument('--crop_size', type=int, default=224 , help='size for randomly cropping images')
+    parser.add_argument('--model_path', type=str, default='models/' , help='path of saved models')
     parser.add_argument('--vocab_path', type=str, default='data/vocab.pkl', help='path for vocabulary wrapper')
     parser.add_argument('--dictionary', type=str, default='data/dict.csv', help='path to dictionary file')
     parser.add_argument('--image_dir', type=str, default='data/resized2014', help='directory for resized images')
