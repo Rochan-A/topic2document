@@ -1,6 +1,7 @@
 import argparse
 import pandas as pd
 
+import gensim
 from gensim import corpora
 from gensim.models import LdaModel
 
@@ -132,11 +133,10 @@ if __name__ == '__main__':
 	# Infer the topic of the inferenced document
 	topic_list, values = inference(df, ldamodel, dictionary)
 
-	import csv
+	unique_values = list(pd.unique(values))
 
-	with open(args.output_dict, "w", newline="") as f:
-		writer = csv.writer(f)
-		writer.writerows(values)
+	import numpy as np
+	np.savetxt(args.output_dict, unique_values, delimiter="\n", fmt='%s')
 
 	save_file = []
 
