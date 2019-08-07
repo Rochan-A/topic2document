@@ -25,7 +25,7 @@ def main(args):
         vocab = pickle.load(f)
 
     # Build data loader
-    data_loader = get_loader(args.image_dir, args.caption_path, vocab,
+    data_loader = get_loader('', args.caption_path, vocab,
                                 args.dictionary, args.batch_size,
                                 shuffle=True, num_workers=args.num_workers)
 
@@ -43,6 +43,13 @@ def main(args):
     total_step = len(data_loader)
     for epoch in range(args.num_epochs):
         for i, (array, captions, lengths) in enumerate(data_loader):
+
+            keywords = []
+            arr = array.numpy()[0]
+            for i in range(len(arr)):
+                if arr[i] == 1:
+                    keywords.append(dictionary[i])
+            keywords = ' '.join(keywords)
 
             # Set mini-batch dataset
             array = array.to(device)
@@ -65,7 +72,7 @@ def main(args):
             sentence = ' '.join(sampled_caption)
 
             # Print out the image and the generated caption
-            print (sentence)
+            print('Topic Keywords: {}\nOutput Virtual Document: {}\n'.format(keywords, sentence))
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
