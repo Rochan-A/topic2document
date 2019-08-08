@@ -133,7 +133,7 @@ if __name__ == '__main__':
 	# Infer the topic of the inferenced document
 	topic_list, values = inference(df, ldamodel, dictionary)
 
-	unique_values = list(pd.unique(values))
+	unique_values = ['keys'] + list(pd.unique(values))
 
 	import numpy as np
 	np.savetxt(args.output_dict, unique_values, delimiter="\n", fmt='%s')
